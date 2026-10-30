@@ -1,0 +1,86 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d3b78">
+    <title>{% block titulo_pagina %}Inversiones Zambrano | Control de inventario{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-body-tertiary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-3 px-lg-4">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'inicio' %}">
+            <img src="{% static 'inventario/images/logo-inventario.svg' %}" alt="" width="46" height="46" class="rounded-circle bg-white">
+            <span class="lh-sm"><span class="d-block fw-bold">Inversiones Zambrano</span><small class="d-block text-white-50">Sistema de control de inventario</small></span>
+        </a>
+        {% if user.is_authenticated %}
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <span class="navbar-text text-light d-none d-sm-inline"><i class="bi bi-person-circle me-1" aria-hidden="true"></i>{{ user.username }}</span>
+            {% if user.is_staff or user.is_superuser %}<a class="btn btn-outline-light btn-sm" href="{% url 'admin:index' %}"><i class="bi bi-gear me-1" aria-hidden="true"></i><span class="d-none d-sm-inline">Administración</span><span class="d-sm-none">Admin</span></a>{% endif %}
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-warning btn-sm fw-semibold" type="submit"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
+{% if user.is_authenticated %}
+<div class="container-fluid">
+    <div class="row">
+        <aside class="col-12 col-md-3 col-lg-2 bg-dark text-white py-3">
+            <div class="px-3 mb-2 text-uppercase text-white-50 fw-semibold small"><i class="bi bi-grid me-2" aria-hidden="true"></i>Menú principal</div>
+            <nav class="nav nav-pills flex-column gap-1 mb-4">
+                <a class="nav-link {% if active_nav == 'inicio' %}active{% else %}link-light{% endif %}" href="{% url 'inicio' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Inicio</a>
+                <a class="nav-link {% if active_nav == 'productos' %}active{% else %}link-light{% endif %}" href="{% url 'productos' %}"><i class="bi bi-box-seam me-2" aria-hidden="true"></i>Productos</a>
+                {% if user.is_staff or user.is_superuser %}
+                <a class="nav-link {% if active_nav == 'proveedores' %}active{% else %}link-light{% endif %}" href="{% url 'proveedores' %}"><i class="bi bi-truck me-2" aria-hidden="true"></i>Proveedores</a>
+                <a class="nav-link {% if active_nav == 'clientes' %}active{% else %}link-light{% endif %}" href="{% url 'clientes' %}"><i class="bi bi-people me-2" aria-hidden="true"></i>Clientes</a>
+                <a class="nav-link {% if active_nav == 'trabajadores' %}active{% else %}link-light{% endif %}" href="{% url 'trabajadores' %}"><i class="bi bi-person-workspace me-2" aria-hidden="true"></i>Trabajadores</a>
+                {% endif %}
+                <a class="nav-link {% if active_nav == 'facturas' %}active{% else %}link-light{% endif %}" href="{% url 'facturas' %}"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Ventas y facturas</a>
+            </nav>
+            {% if user.is_staff or user.is_superuser %}<div class="px-3 mb-2 text-uppercase text-white-50 fw-semibold small"><i class="bi bi-tools me-2" aria-hidden="true"></i>Herramientas</div>
+            <nav class="nav nav-pills flex-column gap-1"><a class="nav-link link-light" href="{% url 'admin:index' %}"><i class="bi bi-sliders me-2" aria-hidden="true"></i>Panel de administración</a></nav>{% endif %}
+            <div class="card border-0 mt-4 mx-1 overflow-hidden d-none d-lg-block">
+                <img src="{% static 'inventario/images/aceites-banner.svg' %}" class="card-img-top" alt="Botellas de aceite para motores">
+                <div class="card-body text-dark p-3">
+                    <div class="fw-semibold"><i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true"></i>Inventario organizado</div>
+                    <p class="small text-secondary mb-0 mt-1">Controla tus productos y existencias desde un solo lugar.</p>
+                </div>
+            </div>
+        </aside>
+        <main class="col-12 col-md-9 col-lg-10 px-3 px-lg-4 py-4">
+            {% if messages %}
+                <div class="mb-3" aria-live="polite">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% elif message.tags == 'warning' %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %} me-2" aria-hidden="true"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% block contenido %}{% endblock %}
+            <footer class="border-top mt-4 pt-3 text-center small text-secondary"><img src="{% static 'inventario/images/logo-inventario.svg' %}" alt="" width="22" height="22" class="me-1"> Inversiones Zambrano <span class="mx-2">·</span> Sistema de control de inventario</footer>
+        </main>
+    </div>
+</div>
+{% else %}
+<main class="container py-4 py-md-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}" role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% block contenido_publico %}{% endblock %}
+</main>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

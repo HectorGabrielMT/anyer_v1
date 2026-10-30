@@ -1,0 +1,65 @@
+{% extends 'inventario/base.html' %}
+{% load static %}
+{% block titulo_pagina %}Inicio | Inversiones Zambrano{% endblock %}
+{% block contenido %}
+<div class="card border-0 shadow-sm overflow-hidden bg-primary-subtle mb-4">
+    <div class="row g-0 align-items-stretch">
+        <div class="col-12 col-lg-8">
+            <div class="card-body p-4 p-xl-5">
+                <span class="badge text-bg-primary rounded-pill mb-3"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Panel de control</span>
+                <h1 class="display-6 fw-bold text-primary-emphasis mb-3">¡Bienvenido a Inversiones Zambrano!</h1>
+                <p class="lead text-body-secondary mb-4">Aquí puedes organizar tus productos, revisar las existencias y registrar tus ventas de forma fácil y rápida.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-primary btn-lg" href="{% url 'producto_crear' %}"><i class="bi bi-plus-circle me-2" aria-hidden="true"></i>Registrar producto</a>
+                    <a class="btn btn-outline-primary btn-lg" href="{% url 'factura_crear' %}"><i class="bi bi-cart-check me-2" aria-hidden="true"></i>Registrar venta</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <img src="{% static 'inventario/images/aceites-banner.svg' %}" class="img-fluid w-100 h-100 object-fit-cover" alt="Aceites lubricantes para vehículos" loading="eager">
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div><h2 class="h4 fw-bold mb-1">Resumen de tu inventario</h2><p class="text-secondary mb-0">Una vista rápida de los datos más importantes.</p></div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body p-3 p-lg-4"><div class="d-flex justify-content-between align-items-start gap-2"><div><div class="text-secondary">Productos registrados</div><div class="display-6 fw-bold text-primary">{{ total_productos }}</div></div><span class="bg-primary-subtle text-primary rounded-3 p-3 fs-3"><i class="bi bi-box-seam" aria-hidden="true"></i></span></div><a class="small text-decoration-none fw-semibold" href="{% url 'productos' %}">Ver productos <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></div></div>
+    {% if user.is_staff or user.is_superuser %}<div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body p-3 p-lg-4"><div class="d-flex justify-content-between align-items-start gap-2"><div><div class="text-secondary">Proveedores</div><div class="display-6 fw-bold text-warning-emphasis">{{ total_proveedores }}</div></div><span class="bg-warning-subtle text-warning-emphasis rounded-3 p-3 fs-3"><i class="bi bi-truck" aria-hidden="true"></i></span></div><a class="small text-decoration-none fw-semibold link-warning" href="{% url 'proveedores' %}">Ver proveedores <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></div></div>
+    {% endif %}<div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body p-3 p-lg-4"><div class="d-flex justify-content-between align-items-start gap-2"><div><div class="text-secondary">Facturas registradas</div><div class="display-6 fw-bold text-info-emphasis">{{ total_facturas }}</div></div><span class="bg-info-subtle text-info-emphasis rounded-3 p-3 fs-3"><i class="bi bi-receipt" aria-hidden="true"></i></span></div><a class="small text-decoration-none fw-semibold link-info" href="{% url 'facturas' %}">Ver ventas <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3"><h2 class="h5 fw-bold mb-0"><i class="bi bi-exclamation-triangle text-warning me-2" aria-hidden="true"></i>Productos con pocas existencias</h2><a class="small text-decoration-none" href="{% url 'productos' %}">Ver inventario</a></div>
+            {% if productos_bajos %}
+                <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Producto</th><th class="text-end">Stock</th></tr></thead><tbody>
+                {% for producto in productos_bajos %}
+                    <tr><td><i class="bi bi-box-seam text-primary me-2" aria-hidden="true"></i>{{ producto.marca }}</td><td class="text-end"><span class="badge {% if producto.stock == 0 %}text-bg-danger{% else %}text-bg-warning{% endif %}">{% if producto.stock == 0 %}Agotado{% else %}{{ producto.stock }} unidades{% endif %}</span></td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            {% else %}<div class="card-body text-secondary"><i class="bi bi-check-circle text-success me-2" aria-hidden="true"></i>No hay productos con cinco unidades o menos.</div>{% endif %}
+        </section>
+    </div>
+    <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3"><h2 class="h5 fw-bold mb-0"><i class="bi bi-receipt-cutoff text-primary me-2" aria-hidden="true"></i>Ventas recientes</h2><a class="small text-decoration-none" href="{% url 'facturas' %}">Ver todas</a></div>
+            {% if facturas_recientes %}
+                <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>N.º</th><th>Cliente</th><th>Fecha</th><th class="text-end">Total</th></tr></thead><tbody>
+                {% for factura in facturas_recientes %}
+                    <tr><td><a class="fw-semibold text-decoration-none" href="{% url 'factura_detalle' factura.pk %}">#{{ factura.id_factura }}</a></td><td>{{ factura.id_cliente.nombre }}</td><td>{{ factura.fecha|date:'d/m/Y' }}</td><td class="text-end fw-semibold">{{ factura.total_factura|floatformat:2 }}</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            {% else %}<div class="card-body text-secondary"><i class="bi bi-info-circle me-2" aria-hidden="true"></i>Aún no se han registrado ventas.</div>{% endif %}
+        </section>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-12 col-lg-4"><div class="card border-0 shadow-sm h-100"><div class="card-body"><span class="bg-primary-subtle text-primary rounded-3 p-3 fs-3 d-inline-block mb-3"><i class="bi bi-boxes" aria-hidden="true"></i></span><h2 class="h5 fw-bold">Gestionar productos</h2><p class="text-secondary">Consulta, registra y actualiza los artículos y sus existencias.</p><a class="btn btn-outline-primary" href="{% url 'productos' %}">Abrir productos <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></a></div></div></div>
+    {% if user.is_staff or user.is_superuser %}<div class="col-12 col-lg-4"><div class="card border-0 shadow-sm h-100"><div class="card-body"><span class="bg-success-subtle text-success rounded-3 p-3 fs-3 d-inline-block mb-3"><i class="bi bi-people" aria-hidden="true"></i></span><h2 class="h5 fw-bold">Clientes y trabajadores</h2><p class="text-secondary">Mantén actualizados los datos de las personas vinculadas a tu negocio.</p><div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-success" href="{% url 'clientes' %}">Clientes</a><a class="btn btn-outline-success" href="{% url 'trabajadores' %}">Trabajadores</a></div></div></div></div>{% endif %}
+    <div class="col-12 col-lg-4"><div class="card border-0 shadow-sm h-100"><div class="card-body"><span class="bg-warning-subtle text-warning-emphasis rounded-3 p-3 fs-3 d-inline-block mb-3"><i class="bi bi-cart-check" aria-hidden="true"></i></span><h2 class="h5 fw-bold">Registrar una venta</h2><p class="text-secondary">Crea una factura y deja que el sistema descuente las existencias automáticamente.</p><a class="btn btn-warning" href="{% url 'factura_crear' %}"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Nueva venta</a></div></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'inventario/base.html' %}
+{% block titulo_pagina %}{{ titulo }} | Inversiones Zambrano{% endblock %}
+{% block contenido %}
+<div class="mb-4"><a class="link-secondary text-decoration-none" href="{{ url_volver }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a la lista</a><div class="d-flex align-items-center gap-3 mt-3"><span class="rounded-3 bg-primary-subtle text-primary p-3 fs-3"><i class="bi bi-clipboard2-plus" aria-hidden="true"></i></span><div><h1 class="h3 fw-bold mb-1">{{ titulo }}</h1><p class="text-secondary mb-0">Introduzca los datos y guarde los cambios.</p></div></div></div>
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3"><h2 class="h5 mb-0"><i class="bi bi-card-list me-2 text-primary" aria-hidden="true"></i>Datos del registro</h2></div>
+    <div class="card-body p-4">
+        {% if error_general %}<div class="alert alert-danger" role="alert">{{ error_general }}</div>{% endif %}
+        <form method="post" action="{{ url_formulario }}" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+                {% for campo in campos %}
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}{% if campo.required %} <span class="text-danger">*</span>{% endif %}</label>
+                    {% if campo.type == 'select' %}
+                        <select id="id_{{ campo.name }}" name="{{ campo.name }}" class="form-select {% if campo.error %}is-invalid{% endif %}" {% if campo.required %}required{% endif %}>
+                            <option value="">Seleccione una opción</option>
+                            {% for opcion in campo.options %}<option value="{{ opcion.id }}" {% if campo.value == opcion.id|stringformat:'s' %}selected{% endif %}>{{ opcion.label }}</option>{% endfor %}
+                        </select>
+                    {% else %}
+                        <input id="id_{{ campo.name }}" name="{{ campo.name }}" type="{{ campo.type }}" value="{{ campo.value }}" class="form-control {% if campo.error %}is-invalid{% endif %}" {% if campo.maxlength %}maxlength="{{ campo.maxlength }}"{% endif %} {% if campo.min %}min="{{ campo.min }}"{% endif %} {% if campo.step %}step="{{ campo.step }}"{% endif %} {% if campo.required %}required{% endif %}>
+                    {% endif %}
+                    {% if campo.error %}<div class="invalid-feedback">{{ campo.error }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top"><a class="btn btn-outline-secondary" href="{{ url_volver }}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancelar</a><button class="btn btn-primary" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{% if es_edicion %}Guardar cambios{% else %}Crear registro{% endif %}</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}

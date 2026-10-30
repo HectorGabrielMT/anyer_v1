@@ -1,0 +1,96 @@
+{% extends 'inventario/base.html' %}
+{% block titulo_pagina %}Nueva factura | Inversiones Zambrano{% endblock %}
+{% block contenido %}
+<div class="mb-4"><a class="link-secondary text-decoration-none" href="{% url 'facturas' %}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a facturas</a><h1 class="h3 fw-bold mt-2 mb-1"><i class="bi bi-cart-check text-primary me-2" aria-hidden="true"></i>Registrar venta</h1><p class="text-secondary mb-0">El sistema calcula el total y descuenta las existencias al guardar.</p></div>
+{% if not clientes or not trabajadores or not productos %}
+<div class="alert alert-warning" role="alert"><h2 class="h6">Faltan datos para vender</h2>Antes de crear una factura debe registrar al menos un cliente, un trabajador y un producto con existencias. Use los enlaces del menú lateral para completar los datos.</div>
+{% endif %}
+<form method="post" id="formulario-factura">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3"><h2 class="h5 mb-0"><i class="bi bi-person-lines-fill text-primary me-2" aria-hidden="true"></i>Datos de la venta</h2></div>
+        <div class="card-body"><div class="row g-3">
+            <div class="col-12 col-md-6"><label for="id_cliente" class="form-label">Cliente <span class="text-danger">*</span></label><select class="form-select" name="id_cliente" id="id_cliente" required><option value="">Seleccione un cliente</option>{% for cliente in clientes %}<option value="{{ cliente.pk }}" {% if cliente_seleccionado == cliente.pk|stringformat:'s' %}selected{% endif %}>{{ cliente.nombre }} — {{ cliente.cedula_o_rif }}</option>{% endfor %}</select></div>
+            <div class="col-12 col-md-6"><label for="id_trabajador" class="form-label">Trabajador responsable <span class="text-danger">*</span></label><select class="form-select" name="id_trabajador" id="id_trabajador" required><option value="">Seleccione un trabajador</option>{% for trabajador in trabajadores %}<option value="{{ trabajador.pk }}" {% if trabajador_seleccionado == trabajador.pk|stringformat:'s' %}selected{% endif %}>{{ trabajador.nombre }} — {{ trabajador.cargo }}</option>{% endfor %}</select></div>
+        </div></div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2"><h2 class="h5 mb-0"><i class="bi bi-box-seam text-primary me-2" aria-hidden="true"></i>Productos de la factura</h2><button type="button" id="agregar-fila" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Añadir producto</button></div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="tabla-productos"><thead class="table-light"><tr><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Precio unitario</th><th class="text-end">Subtotal</th><th>Acción</th></tr></thead>
+        <tbody id="filas-productos">
+            {% for fila in filas %}
+            <tr data-fila-producto>
+                <td><select name="productos[]" class="form-select" data-producto-select aria-label="Producto"><option value="">Seleccione un producto</option>{% for producto in productos %}<option value="{{ producto.pk }}" data-precio="{{ producto.precio_actual }}" data-stock="{{ producto.stock }}" {% if fila.producto == producto.pk|stringformat:'s' %}selected{% endif %}>{{ producto.marca }} — Stock: {{ producto.stock }} — {{ producto.precio_actual|floatformat:2 }}</option>{% endfor %}</select><div class="form-text" data-texto-stock></div></td>
+                <td><input name="cantidades[]" type="number" class="form-control text-end" data-cantidad-input min="1" step="1" value="{{ fila.cantidad }}" required aria-label="Cantidad"></td>
+                <td class="text-end" data-precio-celda>—</td><td class="text-end" data-subtotal-celda>—</td>
+                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger" data-quitar-fila aria-label="Quitar producto">Quitar</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table></div>
+        <div class="card-body border-top"><div class="row justify-content-end"><div class="col-12 col-sm-6 col-lg-4"><div class="d-flex justify-content-between align-items-center"><span class="text-secondary">Total estimado</span><span id="total-estimado" class="h4 fw-bold text-primary mb-0">0,00</span></div><div class="form-text">El total definitivo se calcula nuevamente en el servidor.</div></div></div></div>
+        <div class="card-footer bg-white d-flex justify-content-end gap-2 py-3"><a href="{% url 'facturas' %}" class="btn btn-outline-secondary">Cancelar</a><button type="submit" class="btn btn-primary" {% if not clientes or not trabajadores or not productos %}disabled{% endif %}><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Guardar factura</button></div>
+    </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const tbody = document.getElementById('filas-productos');
+    const total = document.getElementById('total-estimado');
+    const formato = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function actualizarFila(fila) {
+        const selector = fila.querySelector('[data-producto-select]');
+        const cantidad = fila.querySelector('[data-cantidad-input]');
+        const opcion = selector.options[selector.selectedIndex];
+        const precio = opcion && opcion.value ? Number(opcion.dataset.precio || 0) : 0;
+        const stock = opcion && opcion.value ? opcion.dataset.stock : '';
+        const unidades = Math.max(0, Number(cantidad.value || 0));
+        fila.querySelector('[data-precio-celda]').textContent = opcion && opcion.value ? formato.format(precio) : '—';
+        fila.querySelector('[data-subtotal-celda]').textContent = opcion && opcion.value ? formato.format(precio * unidades) : '—';
+        fila.querySelector('[data-texto-stock]').textContent = opcion && opcion.value ? `Disponibles: ${stock}` : '';
+    }
+
+    function actualizarTodo() {
+        let suma = 0;
+        tbody.querySelectorAll('tr[data-fila-producto]').forEach((fila) => {
+            actualizarFila(fila);
+            const selector = fila.querySelector('[data-producto-select]');
+            const opcion = selector.options[selector.selectedIndex];
+            if (opcion && opcion.value) {
+                suma += Number(opcion.dataset.precio || 0) * Math.max(0, Number(fila.querySelector('[data-cantidad-input]').value || 0));
+            }
+        });
+        total.textContent = formato.format(suma);
+        const filas = tbody.querySelectorAll('tr[data-fila-producto]');
+        filas.forEach((fila) => { fila.querySelector('[data-quitar-fila]').disabled = filas.length <= 1; });
+    }
+
+    document.getElementById('agregar-fila').addEventListener('click', () => {
+        const nueva = tbody.querySelector('tr[data-fila-producto]').cloneNode(true);
+        nueva.querySelector('[data-producto-select]').value = '';
+        nueva.querySelector('[data-cantidad-input]').value = '1';
+        tbody.appendChild(nueva);
+        actualizarTodo();
+        nueva.querySelector('[data-producto-select]').focus();
+    });
+
+    tbody.addEventListener('change', (evento) => {
+        if (evento.target.matches('[data-producto-select], [data-cantidad-input]')) actualizarTodo();
+    });
+    tbody.addEventListener('input', (evento) => {
+        if (evento.target.matches('[data-cantidad-input]')) actualizarTodo();
+    });
+    tbody.addEventListener('click', (evento) => {
+        const boton = evento.target.closest('[data-quitar-fila]');
+        if (boton && tbody.querySelectorAll('tr[data-fila-producto]').length > 1) {
+            boton.closest('tr[data-fila-producto]').remove();
+            actualizarTodo();
+        }
+    });
+    actualizarTodo();
+})();
+</script>
+{% endblock %}
